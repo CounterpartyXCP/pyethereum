@@ -1,14 +1,14 @@
 import time
-import Queue
+import queue
 import socket
 
-import signals
-from stoppable import StoppableLoopThread
-from packeter import packeter
-from utils import big_endian_to_int as idec
-from utils import recursive_int_to_big_endian
+from . import signals
+from .stoppable import StoppableLoopThread
+from .packeter import packeter
+from .utils import big_endian_to_int as idec
+from .utils import recursive_int_to_big_endian
 import rlp
-import blocks
+from . import blocks
 from pyethereum.slogging import get_logger
 log_net = get_logger('net')
 log_p2p = get_logger('p2p')
@@ -55,13 +55,13 @@ class Peer(StoppableLoopThread):
         self.status_head_hash = None
 
         self.recv_buffer = ''
-        self.response_queue = Queue.Queue()
+        self.response_queue = queue.Queue()
 
     def __repr__(self):
         return "<Peer(%s:%r)>" % (self.ip, self.port)
 
     def __structlog__(self):
-        return self.node_id.encode('hex')
+        return utils.encode_hex(self.node_id)
 
     def __str__(self):
         return "[{0}: {1}]".format(self.ip, self.port)
@@ -93,7 +93,7 @@ class Peer(StoppableLoopThread):
         # send packet
         try:
             packet = self.response_queue.get(block=False)
-        except Queue.Empty:
+        except queue.Empty:
             return 0
         try:
             self.connection().sendall(packet)
@@ -175,7 +175,7 @@ class Peer(StoppableLoopThread):
         log_p2p.debug('received Hello',
                       remote_id=self,
                       network_protocol_version=network_protocol_version,
-                      node_id=node_id.encode('hex')[:8],
+                      node_id=utils.encode_hex(node_id)[:8],
                       client_version=client_version,
                       capabilities=self.capabilities)
 
@@ -200,8 +200,8 @@ class Peer(StoppableLoopThread):
     def send_Status(self, head_hash, head_total_difficulty, genesis_hash):
         log_eth.debug('sending status',
                       total_difficulty=head_total_difficulty,
-                      head=head_hash.encode('hex'),
-                      genesis=genesis_hash.encode('hex'))
+                      head=utils.encode_hex(head_hash),
+                      genesis=utils.encode_hex(genesis_hash))
 
         self.send_packet(packeter.dump_Status(head_total_difficulty, head_hash, genesis_hash))
         self.status_sent = True
@@ -219,8 +219,8 @@ class Peer(StoppableLoopThread):
                       remote_id=self,
                       ethereum_protocol_version=ethereum_protocol_version,
                       total_difficulty=total_difficulty,
-                      head=head_hash.encode('hex'),
-                      genesis=genesis_hash.encode('hex'))
+                      head=utils.encode_hex(head_hash),
+                      genesis=utils.encode_hex(genesis_hash))
 
         if ethereum_protocol_version != packeter.ETHEREUM_PROTOCOL_VERSION:
             return self.send_Disconnect(reason='Incompatible network protocols')
@@ -311,7 +311,7 @@ class Peer(StoppableLoopThread):
 
     def _recv_Blocks(self, data):
         # open('raw_remote_blocks_hex.txt',
-        # 'a').write(rlp.encode(data).encode('hex') + '\n') # LOG line
+        # 'a').write(utils.encode_hex(rlp.encode(data)) + '\n') # LOG line
         transient_blocks = [blocks.TransientBlock(rlp.encode(b)) for b in data]  # FIXME
         if len(transient_blocks) > MAX_BLOCKS_ACCEPTED:
             log_eth.debug('peer sending too many blocks', num=len(

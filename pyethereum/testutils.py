@@ -4,11 +4,12 @@ import rlp
 from pyethereum import processblock as pb
 import tempfile
 import copy
-from db import DB, EphemDB
+<<<<<<< HEAD
+from .db import DB, EphemDB
 import json
 import os
 import time
-import ethash
+import . import ethash
 db = EphemDB()
 
 env = {
@@ -57,15 +58,15 @@ def mktest(code, language, data=None, fun=None, args=None,
     pre = s.block.to_dict(True)['state']
     if test_type == VM:
         exek = {"address": ca, "caller": t.a0,
-                "code": '0x' + s.block.get_code(ca).encode('hex'),
-                "data": '0x' + d.encode('hex'), "gas": str(gas),
+                "code": '0x' + utils.encode_hex(s.block.get_code(ca)),
+                "data": '0x' + utils.encode_hex(d), "gas": str(gas),
                 "gasPrice": str(1), "origin": t.a0,
                 "value": str(value)}
         return fill_vm_test({"env": env, "pre": pre, "exec": exek})
     else:
         tx = {"data": '0x' + d.encode('hex'), "gasLimit": parse_int_or_hex(gas),
               "gasPrice": str(1), "nonce": str(s.block.get_nonce(t.a0)),
-              "secretKey": t.k0.encode('hex'), "to": ca, "value": str(value)}
+              "secretKey": utils.encode_hex(t.k0), "to": ca, "value": str(value)}
         return fill_state_test({"env": env, "pre": pre, "transaction": tx})
 
 
@@ -91,15 +92,15 @@ def run_vm_test(params, mode):
     # setup state
     for address, h in pre.items():
         assert len(address) == 40
-        address = address.decode('hex')
+        address = utils.decode_hex(address)
         assert set(h.keys()) == set(['code', 'nonce', 'balance', 'storage'])
         blk.set_nonce(address, int(h['nonce']))
         blk.set_balance(address, int(h['balance']))
-        blk.set_code(address, h['code'][2:].decode('hex'))
-        for k, v in h['storage'].iteritems():
+        blk.set_code(address, utils.decode_hex(h['code'][2:]))
+        for k, v in h['storage'].items():
             blk.set_storage_data(address,
-                                 utils.big_endian_to_int(k[2:].decode('hex')),
-                                 utils.big_endian_to_int(v[2:].decode('hex')))
+                                 utils.big_endian_to_int(utils.decode_hex(k[2:])),
+                                 utils.big_endian_to_int(utils.decode_hex(v[2:])))
 
     # execute transactions
     sender = exek['caller'].decode('hex')  # a party that originates a call
@@ -110,7 +111,7 @@ def run_vm_test(params, mode):
         startgas=int(exek['gas']),
         to=recvaddr,
         value=int(exek['value']),
-        data=exek['data'][2:].decode('hex'))
+        data=utils.decode_hex(exek['data'][2:]))
     tx.sender = sender
 
     # capture apply_message calls
@@ -121,7 +122,7 @@ def run_vm_test(params, mode):
 
     def call_wrapper(msg):
         ext.set_balance(msg.sender, ext.get_balance(msg.sender) - msg.value)
-        hexdata = msg.data.extract_all().encode('hex')
+        hexdata = utils.encode_hex(msg.data.extract_all())
         apply_message_calls.append(dict(gasLimit=str(msg.gas),
                                         value=str(msg.value),
                                         destination=msg.to.encode('hex'),
@@ -130,7 +131,7 @@ def run_vm_test(params, mode):
 
     def sendmsg_wrapper(msg, code):
         ext.set_balance(msg.sender, ext.get_balance(msg.sender) - msg.value)
-        hexdata = msg.data.extract_all().encode('hex')
+        hexdata = utils.encode_hex(msg.data.extract_all())
         apply_message_calls.append(dict(gasLimit=str(msg.gas),
                                         value=str(msg.value),
                                         destination=msg.to.encode('hex'),
@@ -139,11 +140,11 @@ def run_vm_test(params, mode):
 
     def create_wrapper(msg):
         ext.set_balance(msg.sender, ext.get_balance(msg.sender) - msg.value)
-        sender = msg.sender.decode('hex') if \
+        sender = utils.decode_hex(msg.sender) if \
             len(msg.sender) == 40 else msg.sender
         nonce = utils.encode_int(ext._block.get_nonce(msg.sender))
-        addr = utils.sha3(rlp.encode([sender, nonce]))[12:].encode('hex')
-        hexdata = msg.data.extract_all().encode('hex')
+        addr = utils.encode_hex(utils.sha3(rlp.encode([sender, nonce]))[12:])
+        hexdata = utils.encode_hex(msg.data.extract_all())
         apply_message_calls.append(dict(gasLimit=str(msg.gas),
                                         value=str(msg.value),
                                         destination='', data='0x' + hexdata))
@@ -165,7 +166,7 @@ def run_vm_test(params, mode):
                      vm.CallData([ord(x) for x in tx.data]))
     time_pre = time.time()
     success, gas_remained, output = \
-        vm.vm_execute(ext, msg, exek['code'][2:].decode('hex'))
+        vm.vm_execute(ext, msg, utils.decode_hex(exek['code'][2:]))
     pb.apply_msg = orig_apply_msg
     blk.commit_state()
     for s in blk.suicides:
@@ -183,7 +184,7 @@ def run_vm_test(params, mode):
 
     if success:
         params2['callcreates'] = apply_message_calls
-        params2['out'] = '0x' + ''.join(map(chr, output)).encode('hex')
+        params2['out'] = '0x' + utils.encode_hex(''.join(map(chr, output)))
         params2['gas'] = str(gas_remained)
         params2['logs'] = [log.to_dict() for log in blk.logs]
         params2['post'] = blk.to_dict(True)['state']
@@ -193,12 +194,12 @@ def run_vm_test(params, mode):
     elif mode == VERIFY:
         params1 = copy.deepcopy(params)
         if 'post' in params1:
-            for k, v in params1['post'].items():
-                if v == {u'code': u'0x', u'nonce': u'0', u'balance': u'0', u'storage': {}}:
+            for k, v in list(params1['post'].items()):
+                if v == {'code': '0x', 'nonce': '0', 'balance': '0', 'storage': {}}:
                     del params1['post'][k]
         if 'post' in params2:
-            for k, v in params2['post'].items():
-                if v == {u'code': u'0x', u'nonce': u'0', u'balance': u'0', u'storage': {}}:
+            for k, v in list(params2['post'].items()):
+                if v == {'code': '0x', 'nonce': '0', 'balance': '0', 'storage': {}}:
                     del params2['post'][k]
         for k in ['pre', 'exec', 'env', 'callcreates',
                   'out', 'gas', 'logs', 'post']:
@@ -232,24 +233,24 @@ def run_state_test(params, mode):
     # setup state
     for address, h in pre.items():
         assert len(address) == 40
-        address = address.decode('hex')
+        address = utils.decode_hex(address)
         assert set(h.keys()) == set(['code', 'nonce', 'balance', 'storage'])
         blk.set_nonce(address, int(h['nonce']))
         blk.set_balance(address, int(h['balance']))
-        blk.set_code(address, h['code'][2:].decode('hex'))
-        for k, v in h['storage'].iteritems():
+        blk.set_code(address, utils.decode_hex(h['code'][2:]))
+        for k, v in h['storage'].items():
             blk.set_storage_data(address,
-                                 utils.big_endian_to_int(k[2:].decode('hex')),
-                                 utils.big_endian_to_int(v[2:].decode('hex')))
+                                 utils.big_endian_to_int(utils.decode_hex(k[2:])),
+                                 utils.big_endian_to_int(utils.decode_hex(v[2:])))
 
     for address, h in pre.items():
-        address = address.decode('hex')
+        address = utils.decode_hex(address)
         assert blk.get_nonce(address) == int(h['nonce'])
         assert blk.get_balance(address) == int(h['balance'])
         assert blk.get_code(address) == h['code'][2:].decode('hex')
         for k, v in h['storage'].iteritems():
             assert blk.get_storage_data(address, utils.big_endian_to_int(
-                k[2:].decode('hex'))) == utils.big_endian_to_int(v[2:].decode('hex'))
+                utils.decode_hex(v[2:]))) == utils.big_endian_to_int(utils.decode_hex(v[2:]))
 
     # execute transactions
     tx = transactions.Transaction(
@@ -258,7 +259,7 @@ def run_state_test(params, mode):
         startgas=parse_int_or_hex(exek['gasLimit'] or "0"),
         to=(exek['to'][2:] if exek['to'][:2] == '0x' else exek['to']).decode('hex'),
         value=int(exek['value'] or "0"),
-        data=exek['data'][2:].decode('hex')).sign(exek['secretKey'])
+        data=utils.decode_hex(exek['data'][2:])).sign(exek['secretKey'])
 
     orig_apply_msg = pb.apply_msg
 
@@ -293,22 +294,22 @@ def run_state_test(params, mode):
 
     params2 = copy.deepcopy(params)
     if success:
-        params2['out'] = '0x' + output.encode('hex')
+        params2['out'] = '0x' + utils.encode_hex(output)
         params2['post'] = copy.deepcopy(blk.to_dict(True)['state'])
         params2['logs'] = [log.to_dict() for log in blk.get_receipt(0).logs]
-        params2['postStateRoot'] = blk.state.root_hash.encode('hex')
+        params2['postStateRoot'] = utils.encode_hex(blk.state.root_hash)
 
     if mode == FILL:
         return params2
     elif mode == VERIFY:
         params1 = copy.deepcopy(params)
         if 'post' in params1:
-            for k, v in params1['post'].items():
-                if v == {u'code': u'0x', u'nonce': u'0', u'balance': u'0', u'storage': {}}:
+            for k, v in list(params1['post'].items()):
+                if v == {'code': '0x', 'nonce': '0', 'balance': '0', 'storage': {}}:
                     del params1['post'][k]
         if 'post' in params2:
-            for k, v in params2['post'].items():
-                if v == {u'code': u'0x', u'nonce': u'0', u'balance': u'0', u'storage': {}}:
+            for k, v in list(params2['post'].items()):
+                if v == {'code': '0x', 'nonce': '0', 'balance': '0', 'storage': {}}:
                     del params2['post'][k]
         for k in ['pre', 'exec', 'env', 'callcreates',
                   'out', 'gas', 'logs', 'post', 'postStateRoot']:
@@ -383,6 +384,6 @@ def get_tests_from_file_or_dir(dname, json_only=False):
         o = {}
         for f in os.listdir(dname):
             fullpath = os.path.join(dname, f)
-            for k, v in get_tests_from_file_or_dir(fullpath, True).items():
+            for k, v in list(get_tests_from_file_or_dir(fullpath, True).items()):
                 o[k] = v
         return o

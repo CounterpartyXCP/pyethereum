@@ -85,7 +85,7 @@ class Transaction(rlp.Serializable):
         for name, _ in self.__class__.fields:
             d[name] = getattr(self, name)
         d['sender'] = self.sender
-        d['hash'] = self.hash.encode('hex')
+        d['hash'] = utils.encode_hex(self.hash)
         return d
 
     def __eq__(self, other):
@@ -95,7 +95,7 @@ class Transaction(rlp.Serializable):
         return not self.__eq__(other)
 
     def __repr__(self):
-        return '<Transaction(%s)>' % self.hash.encode('hex')[:4]
+        return '<Transaction(%s)>' % utils.encode_hex(self.hash.encode)[:4]
 
     def __structlog__(self):
         return self.hash.encode('hex')

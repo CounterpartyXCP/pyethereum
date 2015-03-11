@@ -22,24 +22,24 @@ DEFAULT_STARTGAS = 10000
 
 
 def sha3(x):
-    return utils.sha3(x).encode('hex')
+    return utils.encode_hex(utils.sha3(x))
 
 
 def privtoaddr(x):
     if len(x) == 64:
-        x = x.decode('hex')
+        x = utils.decode_hex(x)
     return utils.privtoaddr(x)
 
 
 def mktx(nonce, gasprice, startgas, to, value, data):
     return transactions.Transaction(
-        int(nonce), gasprice, startgas, to, int(value), data.decode('hex')
+        int(nonce), gasprice, startgas, to, int(value), utils.decode_hex(data)
     ).hex_serialize(False)
 
 
 def contract(nonce, gasprice, startgas, value, code):
     return transactions.contract(
-        int(nonce), gasprice, startgas, int(value), code.decode('hex')
+        int(nonce), gasprice, startgas, int(value), utils.decode_hex(code)
     ).hex_serialize(False)
 
 
@@ -101,8 +101,8 @@ class APIClient(object):
         sender = privtoaddr(pkey_hex)
         nonce = self.getnonce(sender)
         tx = contract(nonce, gasprice, startgas, value, code)
-        formatted_rlp = [sender.decode('hex'), utils.int_to_big_endian(nonce)]
-        addr = utils.sha3(rlp.encode(formatted_rlp))[12:].encode('hex')
+        formatted_rlp = [utils.decode_hex(sender), utils.int_to_big_endian(nonce)]
+        addr = utils.encode_hex(utils.sha3(rlp.encode(formatted_rlp))[12:])
         o = self.applytx(sign(tx, pkey_hex))
         o['addr'] = addr
         return o

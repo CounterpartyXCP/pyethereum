@@ -1,9 +1,9 @@
-import blocks
-import processblock
-import transactions
-import utils
+from pyethereum import blocks
+from pyethereum import processblock
+from pyethereum import transactions
+from pyethereum import utils
 import rlp
-import trie
+from pyethereum import trie
 
 
 def mk_transaction_spv_proof(block, tx):
@@ -21,8 +21,8 @@ def verify_transaction_spv_proof(block, tx, proof):
         processblock.apply_transaction(block, tx)
         trie.proof.pop()
         return True
-    except Exception, e:
-        print e
+    except Exception as e:
+        print(e)
         trie.proof.pop()
         return False
 
@@ -42,7 +42,7 @@ def mk_independent_transaction_spv_proof(block, index):
     if index > 0:
         nodes.extend(block.transactions.produce_spv_proof(rlp.encode(utils.encode_int(index - 1))))
     nodes = map(rlp.decode, list(set(map(rlp.encode, nodes))))
-    print nodes
+    print(nodes)
     return rlp.encode([utils.encode_int(64), block.get_parent().list_header(),
                        block.list_header(), utils.encode_int(index), nodes])
 

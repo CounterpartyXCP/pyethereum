@@ -42,4 +42,4 @@ def test_genesis_hash(genesis_fixture):
 
 
 if __name__ == '__main__':
-    print 'current genesis:', blocks.genesis(new_db()).hex_hash()
+    print('current genesis:', blocks.genesis(new_db()).hex_hash())

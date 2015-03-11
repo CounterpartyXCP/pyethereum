@@ -1,5 +1,5 @@
 import copy
-from ethash_utils import *
+from .ethash_utils import *
 import sys
 
 

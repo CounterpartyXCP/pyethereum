@@ -1,26 +1,26 @@
 import time
 import os
 from operator import attrgetter
-from dispatch import receiver
-from stoppable import StoppableLoopThread
-import signals
-from db import DB, EphemDB
-import utils
+from .dispatch import receiver
+from .stoppable import StoppableLoopThread
+from . import signals
+from .db import DB, EphemDB
+from . import utils
 import rlp
-import blocks
-import processblock
-import peermanager
-import config
-from transactions import Transaction
-from miner import Miner
-from synchronizer import Synchronizer
-from peer import MAX_GET_CHAIN_SEND_HASHES
-from peer import MAX_GET_CHAIN_REQUEST_BLOCKS
+from . import blocks
+from . import processblock
+from . import peermanager
+from . import config
+from .transactions import Transaction
+from .miner import Miner
+from .synchronizer import Synchronizer
+from .peer import MAX_GET_CHAIN_SEND_HASHES
+from .peer import MAX_GET_CHAIN_REQUEST_BLOCKS
 from pyethereum.slogging import get_logger
 log = get_logger('eth.chain')
 
 
-rlp_hash_hex = lambda data: utils.sha3(rlp.encode(data)).encode('hex')
+rlp_hash_hex = lambda data: utils.encode_hex(utils.sha3(rlp.encode(data)))
 
 NUM_BLOCKS_PER_REQUEST = 256  # MAX_GET_CHAIN_REQUEST_BLOCKS
 
@@ -263,7 +263,7 @@ class ChainManager(StoppableLoopThread):
                         assert t_block.prevhash not in self
                         assert t_block.prevhash != self.genesis.hash
                         log.debug('unknown parent', block_hash=t_block,
-                                  parent_hash=t_block.prevhash.encode('hex'), remote_id=peer)
+                                  parent_hash=utils.encode_hex(t_block.prevhash), remote_id=peer)
                         if len(transient_blocks) != 1:
                             # strange situation here.
                             # we receive more than 1 block, so it's not a single newly mined one
@@ -375,7 +375,7 @@ class ChainManager(StoppableLoopThread):
 
     def get_chain(self, start='', count=NUM_BLOCKS_PER_REQUEST):
         "return 'count' blocks starting from head or start"
-        log.debug("get_chain", start=start.encode('hex'), count=count)
+        log.debug("get_chain", start=utils.encode_hex(start), count=count)
         blocks = []
         block = self.head
         if start:
@@ -400,8 +400,8 @@ class ChainManager(StoppableLoopThread):
     def get_descendants(self, block, count=1):
         log.debug("get_descendants", block_hash=block)
         assert block.hash in self
-        block_numbers = range(block.number + 1, min(self.head.number + 1,
-                                                    block.number + count + 1))
+        block_numbers = list(range(block.number + 1, min(self.head.number + 1,
+                                                    block.number + count + 1)))
         return [self.get(self.index.get_block_by_number(n)) for n in block_numbers]
 
 
@@ -414,7 +414,7 @@ log_api = get_logger('chain.api')
 
 @receiver(signals.get_block_hashes_received)
 def handle_get_block_hashes(sender, block_hash, count, peer, **kwargs):
-    _log_api = log_api.bind(block_hash=block_hash.encode('hex'))
+    _log_api = log_api.bind(block_hash=utils.encode_hex(block_hash)
     _log_api.debug("handle_get_block_hashes", count=count)
     max_hashes = min(count, MAX_GET_CHAIN_SEND_HASHES)
     found = []
@@ -441,7 +441,7 @@ def handle_get_blocks(sender, block_hashes, peer, **kwargs):
         if bh in chain_manager:
             found.append(chain_manager.get(bh))
         else:
-            log.debug("unknown block requested", block_hash=bh.encode('hex'))
+            log.debug("unknown block requested", block_hash=utils.encode_hex(bh))
     log_api.debug("found", count=len(found))
     with peer.lock:
         peer.send_Blocks(found)
@@ -454,7 +454,7 @@ def config_chainmanager(sender, config, **kwargs):
 
 @receiver(signals.peer_status_received)
 def peer_status_received(sender, genesis_hash, peer, **kwargs):
-    log_api.debug("received status", remote_id=peer, genesis_hash=genesis_hash.encode('hex'))
+    log_api.debug("received status", remote_id=peer, genesis_hash=utils.encode_hex(genesis_hash))
     # check genesis
     if genesis_hash != chain_manager.genesis.hash:
         return peer.send_Disconnect(reason='wrong genesis block')
@@ -517,7 +517,7 @@ def remote_blocks_received_handler(sender, transient_blocks, peer, **kwargs):
 def remote_block_hashes_received_handler(sender, block_hashes, peer, **kwargs):
     if block_hashes:
         log_api.debug("recv remote block_hashes", count=len(block_hashes), remote_id=peer,
-                      first=block_hashes[0].encode('hex'), last=block_hashes[-1].encode('hex'))
+                      first=utils.encode_hex(block_hashes[0]), last=utils.encode_hex(block_hashes[-1]))
     else:
         log_api.debug("recv 0 remore block hashes, signifying genesis block")
     chain_manager.synchronizer.received_block_hashes(peer, block_hashes)

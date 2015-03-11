@@ -1,4 +1,5 @@
-import rlp, utils
+import rlp
+from . import utils
 
 
 class SecureTrie(object):
@@ -8,7 +9,9 @@ class SecureTrie(object):
         self.db = t.db
 
     def update(self, k, v):
+       
         h = utils.sha3(k)
+        #print('k: ', k, 'v: ', v, 'h: ', h)
         self.db.put(h, k)
         self.trie.update(h, v)
 

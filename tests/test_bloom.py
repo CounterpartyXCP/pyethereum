@@ -5,6 +5,7 @@ import pyethereum.utils as utils
 import pyethereum.bloom as bloom
 import os
 import sys
+import binascii
 
 def check_testdata(data_keys, expected_keys):
     assert set(data_keys) == set(expected_keys), \
@@ -26,7 +27,7 @@ def vm_tests_fixtures():
         for f, fn in zip(files, filenames):
             if f[-5:] == '.json':
                 vm_fixtures[fn[:-5]] = json.load(open(f, 'r'))
-    except IOError, e:
+    except IOError as e:
         raise IOError("Could not read vmtests.json from fixtures",
                       "Make sure you did 'git submodule init'")
     return vm_fixtures
@@ -36,8 +37,8 @@ def vm_tests_fixtures():
 def gen_func(testdata):
     return lambda: do_test_bloom(testdata)
 
-for filename, tests in vm_tests_fixtures().items():
-    for testname, testdata in tests.items():
+for filename, tests in list(vm_tests_fixtures().items()):
+    for testname, testdata in list(tests.items()):
         if 'logs' not in testdata or 'log' not in testname.lower():
             continue
         func_name = 'test_%s_%s' % (filename, testname)
@@ -46,12 +47,11 @@ for filename, tests in vm_tests_fixtures().items():
 
 
 def decode_int_from_hex(x):
-    r = utils.decode_int(x.decode('hex').lstrip("\x00"))
+    r = utils.decode_int(binascii.unhexlify(x)[1:])
     return r
 
 def encode_hex_from_int(x):
-    return utils.zpad(utils.int_to_big_endian(x), 256).encode('hex')
-
+    return utils.encode_hex(utils.zpad(utils.int_to_big_endian(x), 256))
 
 def do_test_bloom(test_logs):
     """
@@ -62,16 +62,16 @@ def do_test_bloom(test_logs):
     topics: The topics of the logentry, given as an array of values.
     """
     for data in test_logs:
-        print data
+        print(data)
         address = data['address']
         # Test via bloom
-        b = bloom.bloom_insert(0, address.decode('hex'))
+        b = bloom.bloom_insert(0, binascii.unhexlify(address))
         for t in data['topics']:
-            b = bloom.bloom_insert(b, t.decode('hex'))
+            b = bloom.bloom_insert(b, binascii.unhexlify(t))
         # Test via Log
         topics = [decode_int_from_hex(x) for x in data['topics']]
         log = pb.Log(address.decode('hex'), topics, '')
         log_bloom = bloom.b64(bloom.bloom_from_list(log.bloomables()))
-        assert log_bloom.encode('hex') == encode_hex_from_int(b)
-        assert data['bloom'] == log_bloom.encode('hex')
+        assert utils.encode_hex(log_bloom) == encode_hex_from_int(b)
+        assert data['bloom'] == utils.encode_hex(log_bloom)
 

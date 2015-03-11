@@ -100,12 +100,12 @@ if __name__ == '__main__':
         for filename, tests in fixtures.items():
             for testname, testdata in tests.items():
                 if testname == sys.argv[2]:
-                    print "Testing: %s %s" % (filename, testname)
+                    print("Testing: %s %s" % (filename, testname))
                     run_block_test(testdata)
     else:
         for filename, tests in fixtures.items():
             for testname, testdata in tests.items():
-                print "Testing: %s %s" % (filename, testname)
+                print("Testing: %s %s" % (filename, testname))
                 run_block_test(testdata)
 else:
     fixtures = testutils.get_tests_from_file_or_dir(

@@ -1,5 +1,5 @@
 import sys
-import signals
+from . import signals
 import rlp
 from pyethereum.utils import big_endian_to_int as idec
 from pyethereum.utils import int_to_big_endian4 as ienc4
@@ -37,7 +37,7 @@ class Packeter(object):
     CLIENT_VERSION = 'Ethereum(py)/%s/%s' % (sys.platform, __version__)
     # the node s Unique Identifier and is the 512-bit hash that serves to
     # identify the node.
-    NODE_ID = sha3('') * 2  # 512bit, set in config
+    NODE_ID = sha3(b'') * 2  # 512bit, set in config
     NETWORK_ID = 0
     SYNCHRONIZATION_TOKEN = 0x22400891
 
@@ -64,10 +64,10 @@ class Packeter(object):
     # FAKE ADAPTIVE MESSAGE IDs (eth,eth)
     cmd_map = dict(p2p_cmd_map)
     offset = 11 + max(p2p_cmd_map.keys())
-    for _id, name in eth_cmd_map.items():
+    for _id, name in list(eth_cmd_map.items()):
         cmd_map[offset + _id] = name
 
-    cmd_map_by_name = dict((v, k) for k, v in cmd_map.items())
+    cmd_map_by_name = dict((v, k) for k, v in list(cmd_map.items()))
 
     # for now we only have eth capabilities.
     # if we add, shh we also need to add Adaptive Message IDs
@@ -86,7 +86,7 @@ class Packeter(object):
         ('Client quitting', 0x08)))
 
     disconnect_reasons_map_by_id = \
-        dict((v, k) for k, v in disconnect_reasons_map.items())
+        dict((v, k) for k, v in list(disconnect_reasons_map.items()))
 
     def __init__(self):
         pass
@@ -95,7 +95,7 @@ class Packeter(object):
         self.config = config
         self.CLIENT_VERSION = self.config.get('network', 'client_version') \
             or self.CLIENT_VERSION
-        self.NODE_ID = self.config.get('network', 'node_id').decode('hex')
+        self.NODE_ID = utils.decode_hex(self.config.get('network', 'node_id'))
 
     @classmethod
     def packet_size(cls, packet):

@@ -24,7 +24,7 @@ def test_ephem():
         assert key not in db
         with pytest.raises(KeyError):
             db.get(key)
-    for key, value in content.iteritems():
+    for key, value in content.items():
         db.put(key, value)
         assert key in db
         assert db.get(key) == value
@@ -32,7 +32,7 @@ def test_ephem():
         db.put(key, alt_content[key])
         assert key in db
         assert db.get(key) == alt_content[key]
-    for key, value in content.iteritems():
+    for key, value in content.items():
         db.delete(key)
         assert key not in db
         with pytest.raises(KeyError):

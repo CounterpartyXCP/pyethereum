@@ -3,13 +3,13 @@ import socket
 import json
 import os
 
-from dispatch import receiver
+from .dispatch import receiver
 
-from stoppable import StoppableLoopThread
+from .stoppable import StoppableLoopThread
 import rlp
-import signals
-import bloom
-from peer import Peer
+from . import signals
+from . import bloom
+from .peer import Peer
 from pyethereum.slogging import get_logger
 log_net = get_logger('net')
 log_p2p = get_logger('p2p')
@@ -210,7 +210,7 @@ class SentFilter(object):
     # filter for 10sseconds
 
     "filters data that should only be sent once"
-    bloom = bloom.bloom_insert(0, '')
+    bloom = bloom.bloom_insert(0, b'')
 
     def add(self, data, peer):
         "returns True if data was previously not added for peer"

@@ -135,7 +135,7 @@ def block(arg=None):
             blk = chain_manager.get(chain_manager.index.get_block_by_number(int(arg)))
         else:
             try:
-                h = arg.decode('hex')
+                h = utils.decode_hex(arg)
             except TypeError:
                 raise KeyError
             blk = chain_manager.get(h)
@@ -151,11 +151,11 @@ def block_children(arg=None):
     """
     log.debug('blocks/%s/children' % arg)
     try:
-        h = arg.decode('hex')
+        h = utils.decode_hex(arg)
         children = chain_manager.index.get_children(h)
     except (KeyError, TypeError):
         return bottle.abort(404, 'Unknown Block  %s' % arg)
-    return dict(children=[c.encode('hex') for c in children])
+    return dict(children=[utils.encode_hex(c) for c in children])
 
 
 # ######## Transactions ############
@@ -179,7 +179,7 @@ def add_transaction():
 
 def get_transaction_and_block(arg=None):
     try:
-        tx_hash = arg.decode('hex')
+        tx_hash = utils.decode_hex(arg)
     except TypeError:
         bottle.abort(500, 'No hex  %s' % arg)
     try:  # index
@@ -229,7 +229,7 @@ def get_pending():
 
 # ########### Trace ############
 def _get_block_before_tx(txhash):
-    tx, blk, i = chain_manager.index.get_transaction(txhash.decode('hex'))
+    tx, blk, i = chain_manager.index.get_transaction(utils.decode_hex(txhash))
     # get the state we had before this transaction
     test_blk = Block.init_from_parent(blk.get_parent(),
                                       blk.coinbase,
@@ -302,24 +302,24 @@ def dtrace(params, txhash):
 @app.get('/spv/tx/<txhash>')
 def spvtrace(txhash):
     try:  # index
-        tx, blk, i = chain_manager.index.get_transaction(txhash.decode('hex'))
+        tx, blk, i = chain_manager.index.get_transaction(utils.decode_hex(txhash))
     except (KeyError, TypeError):
         return bottle.abort(404, 'Unknown Transaction  %s' % txhash)
 
-    return processblock.mk_independent_transaction_spv_proof(blk, i).encode('hex')
+    return utils.encode_hex(processblock.mk_independent_transaction_spv_proof(blk, i))
 
 
 @app.get('/spv/acct/<addr>')
 def spvaddr(addr):
-    return chain_manager.head.state.produce_spv_proof(addr.decode('hex'))
+    return chain_manager.head.state.produce_spv_proof(utils.decode_hex(addr))
 
 
 @app.get('/spv/storage/<addr>/<index>')
 def spvstorage(addr, index):
-    prf1 = chain_manager.head.state.produce_spv_proof(addr.decode('hex'))
+    prf1 = chain_manager.head.state.produce_spv_proof(utils.decode_hex(addr))
     storetree = chain_manager.head.get_storage(addr)
     prf2 = storetree.produce_spv_proof(utils.zpad(utils.encode_int(index), 32))
-    return rlp.encode(prf1 + prf2).encode('hex')
+    return utils.encode_hex(rlp.encode(prf1 + prf2))
 
 
 # Fetch state data
@@ -346,7 +346,7 @@ def dump(txblkhash):
     /dump/<hash>        return state dump after transaction or block
     """
     try:
-        blk = chain_manager.get(txblkhash.decode('hex'))
+        blk = chain_manager.get(utils.decode_hex(txblkhash))
     except:
         try:  # index
             test_blk, tx, i = _get_block_before_tx(txblkhash)
@@ -368,7 +368,7 @@ def account(address=None):
 
 # ######## Peers ###################
 def make_peers_response(peers):
-    objs = [dict(ip=ip, port=port, node_id=node_id.encode('hex'))
+    objs = [dict(ip=ip, port=port, node_id=utils.encode_hex(node_id))
             for (ip, port, node_id) in peers]
     return dict(peers=objs)
 

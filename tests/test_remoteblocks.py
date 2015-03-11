@@ -16,7 +16,6 @@ logger = get_logger()
 # hint: use 'py.test' with the '-s' option to dump logs to the console
 configure_logging(':trace')
 
-
 def import_chain_data(raw_blocks_fn, test_db_path, skip=0):
     db = DB(test_db_path)
     chain_manager = utils.get_chainmanager(db, blocks.genesis(db))
