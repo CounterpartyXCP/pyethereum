@@ -103,6 +103,7 @@ def apply_transaction(block, tx):
     intrinsic_gas_used = (opcodes.GTXCOST
                           + opcodes.GTXDATAZERO * num_zero_bytes
                           + opcodes.GTXDATANONZERO * num_non_zero_bytes)
+    print(opcodes.GTXCOST, tx.startgas, intrinsic_gas_used)
     if tx.startgas < intrinsic_gas_used:
         raise InsufficientStartGas(rp(tx.startgas, intrinsic_gas_used))
 
@@ -138,6 +139,7 @@ def apply_transaction(block, tx):
         log_tx.debug('_res_', result=result, gas_remained=gas_remained, data=data)
     else:  # CREATE
         result, gas_remained, data = create_contract(ext, message)
+        assert type(gas_remained) == int
         log_tx.debug('_create_', result=result, gas_remained=gas_remained, data=data)
 
     assert gas_remained >= 0
@@ -236,6 +238,7 @@ def _apply_msg(ext, msg, code):
 
     # Main loop
     res, gas, dat = vm.vm_execute(ext, msg, code)
+    assert type(gas) == int
     if log_msg.is_active:
         log_msg.debug('MSG APPLIED', result=o, gas_remained=gas, sender=msg.sender, to=msg.to, data=dat)
     if log_state.is_active:
@@ -259,6 +262,8 @@ def create_contract(ext, msg):
     msg.is_create = True
     # assert not ext.get_code(msg.to)
     res, gas, dat = _apply_msg(ext, msg, msg.data.extract_all())
+    assert type(gas) == int
+
     if res:
         if not len(dat):
             return 1, gas, msg.to
