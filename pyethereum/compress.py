@@ -14,7 +14,7 @@ def compress(data):
             i += 31
         elif data[i:i + 2] == b'\x00\x00':
             p = 2
-            while p < 255 and i + p < len(data) and rlp.int_to_big_endian(p) == b'\x00':
+            while p < 255 and i + p < len(data) and data[i + p] == 0:
                 p += 1
             o += b'\xfe' + rlp.int_to_big_endian(p)
             i += p - 1

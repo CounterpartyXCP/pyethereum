@@ -63,13 +63,12 @@ POW_EPOCH_LENGTH = 30000
 
 # Difficulty adjustment algo
 def calc_difficulty(parent, timestamp):
-    offset = parent.difficulty / BLOCK_DIFF_FACTOR
+    offset = parent.difficulty // BLOCK_DIFF_FACTOR
     sign = 1 if timestamp - parent.timestamp < DIFF_ADJUSTMENT_CUTOFF else -1
     # If we enter a special mode where the genesis difficulty starts off below
     # the minimal difficulty, we allow low-difficulty blocks (this will never
     # happen in the official protocol)
     return max(parent.difficulty + offset * sign, min(parent.difficulty, MIN_DIFF))
-
 
 # Auxiliary value for must_* error messages
 aux = [None]
@@ -989,6 +988,7 @@ class Block(rlp.Serializable):
                     v = self.caches[field][address]
                     changes.append([field, address, v])
                     setattr(acct, field, v)
+                    
             self.state.update(address, rlp.encode(acct))
 
         log_state.trace('delta', changes=changes)
@@ -1367,4 +1367,4 @@ def dump_genesis_block_tests_data(db):
     for addr, balance in list(GENESIS_INITIAL_ALLOC.items()):
         data['initial_alloc'][addr] = str(balance)
 
-    print((json.dumps(data, indent=1)))
+    print(json.dumps(data, indent=1))

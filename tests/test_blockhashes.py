@@ -13,7 +13,7 @@ def test_blockhashes_10():
         assert o[i] is None
     assert len(o) == 257
 
-'''
+
 def test_blockhashes_300():
     s = tester.state()
     s.mine(300)
@@ -22,4 +22,3 @@ def test_blockhashes_300():
     for i in range(1, 257):
         assert o[i] == s.blocks[300-i]
     assert len(o) == 257
-'''
