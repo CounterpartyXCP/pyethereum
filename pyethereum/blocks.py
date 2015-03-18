@@ -675,7 +675,7 @@ class Block(rlp.Serializable):
                 return False
             if uncle in ineligible:
                 log.error("Duplicate uncle", block=self,
-                          uncle=utils.encode_hex(utils.sha3(rlp.encode(uncle)))
+                          uncle=utils.encode_hex(utils.sha3(rlp.encode(uncle))))
                 return False
             ineligible.append(uncle)
         return True
@@ -1345,9 +1345,9 @@ def genesis(db, start_alloc=GENESIS_INITIAL_ALLOC, difficulty=GENESIS_DIFFICULTY
             block.set_nonce(addr, int(data['nonce']))
         if 'storage' in data:
             for k, v in data['storage'].items():
-                blk.set_storage_data(addr,
-                                     utils.big_endian_to_int(k[2:].decode('hex')),
-                                     utils.big_endian_to_int(v[2:].decode('hex')))
+                block.set_storage_data(addr,
+                                     utils.big_endian_to_int(utils.decode_hex(k[2:])),
+                                     utils.big_endian_to_int(utils.decode_hex(v[2:])))
     block.commit_state()
     block.state.db.commit()
     # genesis block has predefined state root (so no additional finalization

@@ -682,15 +682,15 @@ class Trie(object):
         '''
         :param key: a string with length of [0, 32]
         '''
-        if not isinstance(key, str):
-            raise Exception("Key must be string")
+        if not isinstance(key, bytes):
+            raise Exception("Key must be bytes")
 
         if len(key) > 32:
             raise Exception("Max key length is 32")
 
         self.root_node = self._delete_and_delete_storage(
             self.root_node,
-            bin_to_nibbles(str(key)))
+            bin_to_nibbles(key))
         self.get_root_hash()
 
     def _get_size(self, node):

@@ -13,12 +13,12 @@ import . import ethash
 db = EphemDB()
 
 env = {
-    "currentCoinbase": "2adc25665018aa1fe0e6bc666dac8fc2697ff9ba",
+    "currentCoinbase": b"2adc25665018aa1fe0e6bc666dac8fc2697ff9ba",
     "currentDifficulty": "256",
     "currentGasLimit": "1000000000",
     "currentNumber": "257",
     "currentTimestamp": "1",
-    "previousHash": "5e20a0453cecd065ea59c37ac63e079ee08998b6045136a8ce6635c7912ec0b6"
+    "previousHash": b"5e20a0453cecd065ea59c37ac63e079ee08998b6045136a8ce6635c7912ec0b6"
 }
 
 FILL = 1
@@ -39,7 +39,7 @@ time_ethash_test = lambda params: run_ethash_test(params, TIME)
 
 def parse_int_or_hex(s):
     if s[:2] == '0x':
-        return utils.big_endian_to_int(s[2:].decode('hex'))
+        return utils.decode_hex(utils.big_endian_to_int(s[2:]))
     else:
         return int(s)
 
@@ -347,14 +347,14 @@ def run_ethash_test(params, mode):
     t7 = time.time()
     # assert full_mine == light_mine
     out = {
-        "seed": seed.encode('hex'),
-        "header_hash": header_hash.encode('hex'),
-        "nonce": nonce.encode('hex'),
+        "seed": utils.encode_hex(seed),
+        "header_hash": utils.encode_hex(header_hash),
+        "nonce": utils.encode_hex(nonce),
         "cache_size": cache_size,
         "full_size": full_size,
         "cache_hash": cache_hash,
-        "mixhash": light_verify["mixhash"].encode('hex'),
-        "result": light_verify["result"].encode('hex'),
+        "mixhash": utils.encode_hex(light_verify["mixhash"]),
+        "result": utils.encode_hex(light_verify["result"]),
     }
     if mode == FILL:
         block.mixhash = light_verify["mixhash"]

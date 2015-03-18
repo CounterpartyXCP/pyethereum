@@ -37,7 +37,7 @@ translator_list = {
 
 def valueconv(k, v):
     if k in ['r', 's']:
-        return '0x'+utils.int_to_big_endian(v).encode('hex')
+        return '0x'+utils.encode_hex(utils.int_to_big_endian(v))
     return v
 
 
@@ -93,6 +93,7 @@ def do_test_block(filename, testname=None, testdata=None, limit=99999999):
     logger.debug('running test:%r in %r' % (testname, filename))
     run_block_test(testdata)
 
+
 if __name__ == '__main__':
     assert len(sys.argv) >= 2, "Please specify file or dir name"
     fixtures = testutils.get_tests_from_file_or_dir(sys.argv[1])
@@ -110,7 +111,11 @@ if __name__ == '__main__':
 else:
     fixtures = testutils.get_tests_from_file_or_dir(
         os.path.join('fixtures', 'BlockTests'))
+    '''print(fixtures)
+    exit()'''
     for filename, tests in fixtures.items():
-        for testname, testdata in tests.items()[:500]:
+        for testname, testdata in list(tests.items())[:500]:
             func_name = 'test_%s_%s' % (filename, testname)
             globals()[func_name] = lambda: do_test_block(filename, testname, testdata)
+            break
+        break

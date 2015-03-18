@@ -42,8 +42,10 @@ for filename, tests in list(vm_tests_fixtures().items()):
         if 'logs' not in testdata or 'log' not in testname.lower():
             continue
         func_name = 'test_%s_%s' % (filename, testname)
-        globals()[func_name] = gen_func(testdata['logs'])
-
+        print('func_name', func_name)
+        if func_name == 'test_vmLogTest_log3_nonEmptyMem_logMemSize1':
+            globals()[func_name] = gen_func(testdata['logs'])
+     
 
 
 def decode_int_from_hex(x):
@@ -61,16 +63,21 @@ def do_test_bloom(test_logs):
     data: The data of the logentry.
     topics: The topics of the logentry, given as an array of values.
     """
+    print('test_logs:', test_logs)
+
     for data in test_logs:
-        print(data)
+        data['bloom'] = bytes(data['bloom'], 'utf-8')
+        data['address'] = bytes(data['address'], 'utf-8')
         address = data['address']
         # Test via bloom
         b = bloom.bloom_insert(0, binascii.unhexlify(address))
         for t in data['topics']:
+            t = bytes(t, 'utf-8')
             b = bloom.bloom_insert(b, binascii.unhexlify(t))
         # Test via Log
-        topics = [decode_int_from_hex(x) for x in data['topics']]
-        log = pb.Log(address.decode('hex'), topics, '')
+        topics = [decode_int_from_hex(bytes(x, 'utf-8')) for x in data['topics']]
+        log = pb.Log(utils.decode_hex(address), topics, '')
+
         log_bloom = bloom.b64(bloom.bloom_from_list(log.bloomables()))
         assert utils.encode_hex(log_bloom) == encode_hex_from_int(b)
         assert data['bloom'] == utils.encode_hex(log_bloom)

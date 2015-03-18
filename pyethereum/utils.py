@@ -4,7 +4,7 @@ import struct
 import os
 import sys
 import rlp
-from rlp.sedes import big_endian_int, BigEndianInt, Binary, int_to_big_endian
+from rlp.sedes import big_endian_int, BigEndianInt, Binary
 from . import db
 import random
 import binascii
@@ -13,6 +13,17 @@ TT256 = 2 ** 256
 TT256M1 = 2 ** 256 - 1
 TT255 = 2 ** 255
 
+def int_to_big_endian(integer):
+    '''convert a integer to big endian binary string'''
+    # 0 is a special case, treated same as ''
+    if integer == 0:
+        return ''
+    s = '%x' % integer
+    if len(s) & 1:
+        s = '0' + s
+    return s.decode('hex')
+
+ienc = int_to_big_endian
 
 if sys.version_info.major == 2:
     def decode_hex(s):
@@ -256,14 +267,14 @@ def encode_int256(v):
 
 def scan_bin(v):
     if v[:2] == '0x':
-        return v[2:].decode('hex')
+        return decode_hex(v[2:])
     else:
-        return v.decode('hex')
+        return decode_hex(v)
 
 
 def scan_int(v):
     if v[:2] == '0x':
-        return big_endian_to_int(v[2:].decode('hex'))
+        return big_endian_to_int(decode_hex(v[2:]))
     else:
         return int(v)
 
@@ -292,8 +303,8 @@ printers = {
     "bin": lambda v: '0x' + str(binascii.hexlify(v).decode('ascii')),
     "addr": lambda v: v,
     "int": lambda v: str(v),
-    "trie_root": lambda v: v.encode('hex'),
-    "int256b": lambda x: zpad(encode_int256(x), 256).encode('hex')
+    "trie_root": lambda v: encode_hex(v),
+    "int256b": lambda x: encode_hex(zpad(encode_int256(x), 256))
 }
 
 # Decoding from printable format
@@ -302,7 +313,7 @@ scanners = {
     "addr": lambda x: x[2:] if x[:2] == '0x' else x,
     "int": scan_int,
     "trie_root": lambda x: scan_bin,
-    "int256b": lambda x: big_endian_to_int(x.decode('hex'))
+    "int256b": lambda x: big_endian_to_int(decode_hex(x))
 }
 
 
