@@ -4,7 +4,9 @@ import json
 import ethereum.blocks as blocks
 import ethereum.testutils as testutils
 from rlp.utils import encode_hex
-from ethereum.tests.utils import new_db
+import ethereum.utils as utils
+from ethereum.testutils import fixture_to_bytes
+from tests.utils import new_db
 from ethereum.slogging import get_logger, configure_logging
 logger = get_logger()
 # configure_logging(':trace')
@@ -23,7 +25,7 @@ def genesis_fixture():
     # FIXME: assert that link is uptodate
     for k in ('genesis_rlp_hex', 'genesis_state_root', 'genesis_hash'):
         assert k in genesis_fixture
-    return genesis_fixture
+    return fixture_to_bytes(genesis_fixture)
 
 
 def test_genesis_state_root(genesis_fixture):
