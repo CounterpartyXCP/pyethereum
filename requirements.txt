@@ -1,6 +1,3 @@
-https://github.com/vbuterin/pybitcointools/archive/master.zip
-https://github.com/adamkrellenstein/pyethereum/archive/develop.zip
-https://github.com/adamkrellenstein/rlp/archive/python3.zip
 bottle
 docopt
 leveldb
